@@ -20,19 +20,64 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
 
   constructor() {
     super();
-    this.title = "";
-    this.t = this.t || {};
-    this.t = {
-      ...this.t,
-      title: "Title",
+    const response = {
+      "data": [
+        {
+          "source": "https://github.com/btopro.png",
+          "title": "Inventor"
+        },
+        {
+          "source": "https://github.com/haxtheweb.png",
+          "title": "Invention"
+        }
+      ]
     };
-    this.registerLocalization({
-      context: this,
-      localesPath:
-        new URL("./locales/social-media.ar.json", import.meta.url).href +
-        "/../",
-      locales: ["ar", "es", "hi", "zh"],
+
+    // step into the data property of this response, then loop over the array
+    response.data.forEach((i) => {
+      // each array item passed in is going to be an object.
+      // so i.{propertyName} is how we access things here
+      // you can also do i['title'] and it's the same as i.title
+      // this syntax allows for making the object key variable
+      const div = document.createElement('div');
+      div.innerHTML = i.title;
+      const image = document.createElement('img');
+      image.src = i.source;
+      div.appendChild(image);
+      document.querySelector('p').appendChild(div);
     });
+
+
+    document.querySelector('button').addEventListener('click', (e) => {
+      getFoxes();
+    });
+    // now let's get data via fetch
+    // fetch returns a Promise. Meaning we need to have statements executed by
+    // chaining together then() statements. This means when the first thing
+    // happens, THEN do this next thing. There's always data available from
+    // what was resolved in the Promise. In a fetch this information is
+    // a response from the request and includes header data about the cal
+    // as well as the data itself
+    function getFoxes() {
+      fetch("https://randomfox.ca/floof/").then((resp) => {
+        // headers indicating the request was good, then process it
+        if (resp.ok) {
+          // return the response as JSON. .text() is another valid response
+          // though that's more useful for HTML / non data object responses
+          return resp.json();
+        }
+      }).then((data) => {
+        // THEN after the 2nd promise resolves, do this
+        // the data being passed in, whill be the response object as json()
+        // from the previous Promise resolving
+        // here we can see that data.image allows us to access the image
+        // attribute in the response
+        let image = document.createElement('img');
+        image.src = data.image;
+        document.querySelector('p').appendChild(image);
+        document.body.appendChild(document.createTextNode(data.link));
+      });
+    }
   }
 
   // Lit reactive properties
