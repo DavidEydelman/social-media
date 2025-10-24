@@ -20,75 +20,16 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
 
   constructor() {
     super();
-    const response = {
-      "data": [
-        {
-          "source": "https://github.com/btopro.png",
-          "title": "Inventor"
-        },
-        {
-          "source": "https://github.com/haxtheweb.png",
-          "title": "Invention"
-        }
-      ]
-    };
-
-    // step into the data property of this response, then loop over the array
-    response.data.forEach((i) => {
-      // each array item passed in is going to be an object.
-      // so i.{propertyName} is how we access things here
-      // you can also do i['title'] and it's the same as i.title
-      // this syntax allows for making the object key variable
-      const div = document.createElement('div');
-      div.innerHTML = i.title;
-      const image = document.createElement('img');
-      image.src = i.source;
-      div.appendChild(image);
-      document.querySelector('p').appendChild(div);
-    });
-
-
-    document.querySelector('button').addEventListener('click', (e) => {
-      getFoxes();
-    });
-    // now let's get data via fetch
-    // fetch returns a Promise. Meaning we need to have statements executed by
-    // chaining together then() statements. This means when the first thing
-    // happens, THEN do this next thing. There's always data available from
-    // what was resolved in the Promise. In a fetch this information is
-    // a response from the request and includes header data about the cal
-    // as well as the data itself
-    function getFoxes() {
-      fetch("https://randomfox.ca/floof/").then((resp) => {
-        // headers indicating the request was good, then process it
-        if (resp.ok) {
-          // return the response as JSON. .text() is another valid response
-          // though that's more useful for HTML / non data object responses
-          return resp.json();
-        }
-      }).then((data) => {
-        // THEN after the 2nd promise resolves, do this
-        // the data being passed in, whill be the response object as json()
-        // from the previous Promise resolving
-        // here we can see that data.image allows us to access the image
-        // attribute in the response
-        let image = document.createElement('img');
-        image.src = data.image;
-        document.querySelector('p').appendChild(image);
-        document.body.appendChild(document.createTextNode(data.link));
-      });
-    }
+    this.foxes = [];
   }
 
-  // Lit reactive properties
   static get properties() {
     return {
       ...super.properties,
-      title: { type: String },
+      foxes: { type: Array },
     };
   }
 
-  // Lit scoped styles
   static get styles() {
     return [super.styles,
     css`
@@ -105,24 +46,61 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
       h3 span {
         font-size: var(--social-media-label-font-size, var(--ddd-font-size-s));
       }
+      .fox-container {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding: 10px 0;
+      }
+      .fox-container img {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        flex-shrink: 0; 
+      }
     `];
   }
 
-  // Lit render the HTML
   render() {
     return html`
-<div class="wrapper">
-  <h3><span>${this.t.title}:</span> ${this.title}</h3>
-  <slot></slot>
-</div>`;
+      <div class="wrapper">
+        <button @click="${this.getFox}">Generate Random Fox</button>
+
+        <div class="fox-container">
+          ${this.foxes?.map(fox => html`<img src="${fox}" alt="Random Fox" />`)}
+        </div>
+        <div class="controls">
+          <button @click="${this.next}">next</button>
+          <button @click="${this.back}">back</button>
+          <button @click="${this.like}">like</button>
+          <button @click="${this.dislike}">dislike</button>
+        </div>
+      </div>
+    `;
   }
 
-  /**
-   * haxProperties integration via file reference
-   */
+  getFox() {
+    fetch("https://randomfox.ca/floof/").then((resp) => {
+      if (resp.ok) {
+        return resp.json();
+      }
+    }).then((data) => {
+      this.foxes = [...this.foxes, data.image];
+    });
+  }
+
+connectedCallback() {
+  super.connectedCallback();
+  for (let i = 0; i < 5; i++) {
+    this.getFox();
+  }
+}
+
   static get haxProperties() {
-    return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url)
-      .href;
+    return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url).href;
   }
 }
 
