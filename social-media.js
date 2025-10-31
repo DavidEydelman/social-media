@@ -125,7 +125,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
             <button @click="${this.ShareCopyLink}">Share</button>
           </div>
           <button @click="${this.back}"><</button>
-          <button @click="${this.like}" class="${currentPost?.like ? 'active' : ''}">xxx👍</button>
+          <button @click="${this.like}" class="${currentPost?.like ? 'active' : ''}">yyy👍</button>
           <button @click="${this.dislike}" class="${currentPost?.dislike ? 'active' : ''}">👎</button>
           <button @click="${this.next}">></button>
         </div>
@@ -134,7 +134,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
   }
 
   async getPosts() {
-    const response = await fetch('/api/images');
+    const response = await fetch('/images.json');
     if (response.ok) {
       const data = await response.json();
       this.posts = data;
