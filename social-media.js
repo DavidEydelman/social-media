@@ -125,7 +125,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
             <button @click="${this.ShareCopyLink}">Share</button>
           </div>
           <button @click="${this.back}"><</button>
-          <button @click="${this.like}" class="${currentPost?.like ? 'active' : ''}">yyy👍</button>
+          <button @click="${this.like}" class="${currentPost?.like ? 'active' : ''}">👍</button>
           <button @click="${this.dislike}" class="${currentPost?.dislike ? 'active' : ''}">👎</button>
           <button @click="${this.next}">></button>
         </div>
