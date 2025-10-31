@@ -20,14 +20,14 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
 
   constructor() {
     super();
-    this.foxes = [];
+    this.posts = [];
     this.currentIndex = 0;
   }
 
   static get properties() {
     return {
       ...super.properties,
-      foxes: { type: Array },
+      posts: { type: Array },
       currentIndex: { type: Number },
     };
   }
@@ -64,10 +64,13 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
         cursor: pointer;
         background-color: var(--ddd-theme-default-shrineTan);
       }
+      .controls button.active {
+        background-color: var(--ddd-theme-default-shrineTan);
+      }
       h3 span {
         font-size: var(--social-media-label-font-size, var(--ddd-font-size-s));
       }
-      .fox-container {
+      .post-container {
         display: flex;
         flex-direction: row;
         gap: var(--ddd-spacing-8);
@@ -75,10 +78,10 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
         scroll-behavior: smooth;
         padding: var(--ddd-spacing-10);
       }
-      .fox-container::-webkit-scrollbar {
+      .post-container::-webkit-scrollbar {
         display: none;
       }
-      .fox-container img {
+      .post-container img {
         width: 400px;
         height: 400px;
         object-fit: cover;
@@ -87,7 +90,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
         scroll-snap-align: center;
         transition: opacity 0.3s ease, transform 0.3s ease;
       }
-      .fox-container img.selected {
+      .post-container img.selected {
         transform: scale(1.15);
       }
       @media (prefers-color-scheme: dark) {
@@ -98,17 +101,23 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
         .controls button:hover {
           background-color: var(--ddd-theme-default-roarLight);
         }
+        .controls button.active {
+        background-color: var(--ddd-theme-default-roarLight);
+        }
       }
     `];
   }
 
   render() {
+    const currentPost = this.posts ? this.posts[this.currentIndex] : null;
+    
     return html`
       <div class="wrapper">
-        <div class="fox-container">
-          ${this.foxes?.map((fox, index) => html`
+        <div class="post-container">
+          ${this.posts?.map((post, index) => html`
             <img 
-              src="${fox}" 
+              src="${post.image.src}" 
+              alt="${post.image.title}"
               class="${index === this.currentIndex ? 'selected' : ''}" />`)}
         </div>
         <div class="controls">
@@ -116,28 +125,29 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
             <button @click="${this.ShareCopyLink}">Share</button>
           </div>
           <button @click="${this.back}"><</button>
-          <button @click="${this.like}">👍</button>
-          <button @click="${this.dislike}">👎</button>
+          <button @click="${this.like}" class="${currentPost?.like ? 'active' : ''}">👍</button>
+          <button @click="${this.dislike}" class="${currentPost?.dislike ? 'active' : ''}">👎</button>
           <button @click="${this.next}">></button>
         </div>
       </div>
     `;
   }
 
-  getFox() {
-    fetch("https://randomfox.ca/floof/").then((resp) => {
-      if (resp.ok) {
-        return resp.json();
-      }
-    }).then((data) => {
-      this.foxes = [...this.foxes, data.image];
-    });
+  async getPosts() {
+    const response = await fetch('./images.json');
+    if (response.ok) {
+      const data = await response.json();
+      this.posts = data;
+    }
   }
 
   next() {
-    if (this.currentIndex < this.foxes.length - 1) {
+    if (this.currentIndex < this.posts.length - 1) {
       this.currentIndex++;
       this.scrollToIndex(this.currentIndex);
+    }
+    if (this.currentIndex >= this.posts.length - 3) {
+      this.getPosts();
     }
   }
   
@@ -148,8 +158,24 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
     }
   }
 
+  like() {
+    if (this.posts[this.currentIndex]) {
+      this.posts[this.currentIndex].like = true;
+      this.posts[this.currentIndex].dislike = false;
+      this.requestUpdate();
+    }
+  }
+
+  dislike() {
+    if (this.posts[this.currentIndex]) {
+      this.posts[this.currentIndex].dislike = true;
+      this.posts[this.currentIndex].like = false;
+      this.requestUpdate();
+    }
+  }
+
   scrollToIndex(index) {
-    const container = this.shadowRoot.querySelector('.fox-container');
+    const container = this.shadowRoot.querySelector('.post-container');
     const images = container.querySelectorAll('img');
     
     if (images[index]) {
@@ -163,8 +189,8 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
 
   connectedCallback() {
     super.connectedCallback();
-    for (let i = 0; i < 15; i++) {
-      this.getFox();
+    for (let i = 0; i < 5; i++) {
+      this.getPosts();
     };
   }
 
