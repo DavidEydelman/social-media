@@ -118,7 +118,8 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
             <img 
               src="${post.image.src}" 
               alt="${post.image.title}"
-              class="${index === this.currentIndex ? 'selected' : ''}" />`)}
+              id="${index}" @click="${() => { this.currentIndex = index; this.scrollToIndex(index); }}"
+              class="${index === this.currentIndex ? 'selected' : ''}" />`)} //
         </div>
         <div class="controls">
           <div class="ShareLabel">
