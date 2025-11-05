@@ -21,7 +21,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
   constructor() {
     super();
     this.posts = [];
-    this.currentIndex = 4;
+    this.currentIndex = 2;
   }
 
   static get properties() {
@@ -163,7 +163,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
             <img 
               src="${post.image.src}" 
               alt="${post.image.title}"
-              id="${index}" @click="${() => { this.currentIndex = index; this.scrollToIndex(index); }}"
+              id="${index}" @click="${() => { this.currentIndex = index; this.scrollToIndex(index); this.getPosts(); }}"
               class="${index === this.currentIndex ? 'selected' : ''}" />`)} //
         </div>
         <div class="info-wrapper">
@@ -193,11 +193,18 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
   }
 
   async getPosts() {
-    const response = await fetch('/api/images');
+    const response = await fetch ('/api/images');
     if (response.ok) {
       const data = await response.json();
-      this.posts = data;
-      this.loadLikesDislikes();
+      if (data.length > 0 && this.posts.length < data.length) {
+        const nextPost = data[this.posts.length];
+        this.posts = [...this.posts, nextPost];
+        this.loadLikesDislikes();
+        this.requestUpdate();
+      }
+      if (this.currentIndex >= this.posts.length - 3) {
+        this.getPosts();
+      }
     }
   }
 
@@ -228,14 +235,13 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
   ShareCopyLink() {
     const currentPost = this.posts ? this.posts[this.currentIndex] : null;
     if (currentPost) {
-      const dummy = document.createElement('input');
-      const url = window.location.href + '#' + currentPost.id;
-      document.body.appendChild(dummy);
-      dummy.value = url;
-      dummy.select();
-      document.execCommand('copy');
-      document.body.removeChild(dummy);
-      alert('Link copied to clipboard: ' + url);
+      const baseUrl = window.location.origin + window.location.pathname;
+      const params = new URLSearchParams({ postId: currentPost.id }).toString();
+      const url = `${baseUrl}?${params}`;
+      
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied to clipboard!');
+      });
     }
   }
 
@@ -287,51 +293,31 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
     }
   }
 
-  handleHashNavigation() {
-  const hash = window.location.hash;
-  if (hash) {
-    const postId = hash.substring(1);
-    const postIndex = this.posts.findIndex(post => post.id === postId);
+  loadFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('postId');
     
-    if (postIndex !== -1) {
-      this.currentIndex = postIndex;
-      setTimeout(() => {
-        this.scrollToIndex(postIndex);
-      }, 100);
+    if (postId) {
+      this.currentIndex = postId - 1;
     }
   }
-}
 
-async connectedCallback() {
-  super.connectedCallback();
-  
-  // Load posts first
-  for (let i = 0; i < 5; i++) {
-    await this.getPosts();
-  }
-  
-  // Wait for render to complete
-  await this.updateComplete;
-  
-  // Add a delay to ensure DOM is fully ready
-  setTimeout(() => {
-    this.handleHashNavigation();
-    // If no hash, scroll to currentIndex (which could be 4 or whatever you set)
-    if (!window.location.hash) {
+  async connectedCallback() {
+    super.connectedCallback();
+
+    this.getPosts();
+    this.loadFromURL(); 
+
+    await this.updateComplete;
+
+    setTimeout(() => {
       this.scrollToIndex(this.currentIndex);
-    }
-  }, 500);
-  
-  // Listen for hash changes
-  this.hashChangeHandler = () => {
-    setTimeout(() => this.handleHashNavigation(), 300);
-  };
-  window.addEventListener('hashchange', this.hashChangeHandler);
-}
-
-  static get haxProperties() {
-    return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url).href;
+    }, 500);
   }
-}
+
+    static get haxProperties() {
+      return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url).href;
+    }
+  }
 
 globalThis.customElements.define(SocialMedia.tag, SocialMedia);
