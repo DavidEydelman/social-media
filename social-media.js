@@ -21,7 +21,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
   constructor() {
     super();
     this.posts = [];
-    this.currentIndex = 0;
+    this.currentIndex = 4;
   }
 
   static get properties() {
@@ -93,6 +93,51 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
       .post-container img.selected {
         transform: scale(1.15);
       }
+      .info-wrapper {
+        display: flex;
+        align-items: center;
+        gap: var(--ddd-spacing-2);
+        padding: var(--ddd-spacing-1);
+        max-width: 400px;
+        margin: 0 auto;
+      }
+      .author-info {
+        display: flex;
+        align-items: center;
+        gap: var(--ddd-spacing-2);
+        flex-shrink: 0;
+      }
+      .author-info img {
+        border-radius: 50%;
+      }
+      .author-details {
+        display: flex;
+        flex-direction: column;
+        gap: var(--ddd-spacing-0);
+        line-height: var(--ddd-lh-120);
+      }
+      .author-name {
+        font-family: var(--ddd-font-primary);
+        font-weight: var(--ddd-font-weight-bold);
+        font-size: 16px;
+      }
+      .author-username {
+        font-size: 14px;
+      }
+      .post-info {
+        display: flex;
+        flex-direction: column;
+        text-align: right;
+        flex-grow: 1;
+      }
+      .post-info h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .post-info p {
+        margin: 0;
+        font-size: 14px;
+      }
       @media (prefers-color-scheme: dark) {
         :host {
           color: var(--ddd-theme-default-coalyGray);
@@ -121,6 +166,19 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
               id="${index}" @click="${() => { this.currentIndex = index; this.scrollToIndex(index); }}"
               class="${index === this.currentIndex ? 'selected' : ''}" />`)} //
         </div>
+        <div class="info-wrapper">
+          <div class="author-info">
+            <img src="${currentPost ? currentPost.author.pfp : ''}" width="50" height="50" />
+            <div class="author-details">
+              <span class="author-name">${currentPost ? currentPost.author.name || currentPost.author.username : ''}</span>
+              <span class="author-username">${currentPost ? currentPost.author.username : ''}</span>
+            </div>
+          </div>
+          <div class="post-info">
+            <h2>${currentPost ? html`${currentPost.image.title}` : 'Loading...'}</h2>
+            <p>${currentPost ? html`${currentPost.image.date}` : ''}</p>
+          </div>
+        </div>
         <div class="controls">
           <div class="ShareLabel">
             <button @click="${this.ShareCopyLink}">Share</button>
@@ -139,6 +197,45 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
     if (response.ok) {
       const data = await response.json();
       this.posts = data;
+      this.loadLikesDislikes();
+    }
+  }
+
+  loadLikesDislikes() {
+    const storedData = JSON.parse(localStorage.getItem('socialMediaReactions')) || {};
+    this.posts = this.posts.map((post, index) => {
+      const reaction = storedData[index] || {};
+      return {
+        ...post,
+        like: reaction.like || false,
+        dislike: reaction.dislike || false
+      };
+    });
+    this.requestUpdate();
+  }
+
+  saveLikesDislikes() {
+    const storedData = {};
+    this.posts.forEach((post, index) => {
+      storedData[index] = {
+        like: post.like || false,
+        dislike: post.dislike || false
+      };
+    });
+    localStorage.setItem('socialMediaReactions', JSON.stringify(storedData));
+  }
+
+  ShareCopyLink() {
+    const currentPost = this.posts ? this.posts[this.currentIndex] : null;
+    if (currentPost) {
+      const dummy = document.createElement('input');
+      const url = window.location.href + '#' + currentPost.id;
+      document.body.appendChild(dummy);
+      dummy.value = url;
+      dummy.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummy);
+      alert('Link copied to clipboard: ' + url);
     }
   }
 
@@ -151,7 +248,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
       this.getPosts();
     }
   }
-  
+
   back() {
     if (this.currentIndex > 0) {
       this.currentIndex--;
@@ -164,6 +261,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
       this.posts[this.currentIndex].like = true;
       this.posts[this.currentIndex].dislike = false;
       this.requestUpdate();
+      this.saveLikesDislikes();
     }
   }
 
@@ -172,13 +270,14 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
       this.posts[this.currentIndex].dislike = true;
       this.posts[this.currentIndex].like = false;
       this.requestUpdate();
+      this.saveLikesDislikes();
     }
   }
 
   scrollToIndex(index) {
     const container = this.shadowRoot.querySelector('.post-container');
     const images = container.querySelectorAll('img');
-    
+
     if (images[index]) {
       images[index].scrollIntoView({
         behavior: 'smooth',
@@ -188,12 +287,47 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
     }
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    for (let i = 0; i < 5; i++) {
-      this.getPosts();
-    };
+  handleHashNavigation() {
+  const hash = window.location.hash;
+  if (hash) {
+    const postId = hash.substring(1);
+    const postIndex = this.posts.findIndex(post => post.id === postId);
+    
+    if (postIndex !== -1) {
+      this.currentIndex = postIndex;
+      setTimeout(() => {
+        this.scrollToIndex(postIndex);
+      }, 100);
+    }
   }
+}
+
+async connectedCallback() {
+  super.connectedCallback();
+  
+  // Load posts first
+  for (let i = 0; i < 5; i++) {
+    await this.getPosts();
+  }
+  
+  // Wait for render to complete
+  await this.updateComplete;
+  
+  // Add a delay to ensure DOM is fully ready
+  setTimeout(() => {
+    this.handleHashNavigation();
+    // If no hash, scroll to currentIndex (which could be 4 or whatever you set)
+    if (!window.location.hash) {
+      this.scrollToIndex(this.currentIndex);
+    }
+  }, 500);
+  
+  // Listen for hash changes
+  this.hashChangeHandler = () => {
+    setTimeout(() => this.handleHashNavigation(), 300);
+  };
+  window.addEventListener('hashchange', this.hashChangeHandler);
+}
 
   static get haxProperties() {
     return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url).href;
