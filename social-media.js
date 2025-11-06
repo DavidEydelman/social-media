@@ -310,7 +310,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
 
     setTimeout(() => {
       this.scrollToIndex(this.currentIndex);
-    }, 700);
+    }, 1000);
   }
 
     static get haxProperties() {
