@@ -48,15 +48,15 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
         display: flex;
         justify-content: center;
         gap: var(--ddd-spacing-2);
-        margin-top: var(--ddd-spacing-4);
+        margin-top: var(--ddd-spacing-1);
       }
       .controls button {
         background-color: var(--ddd-theme-primary);
         color: var(--ddd-theme-on-primary);
         border: none;
-        border-radius: var(--ddd-spacing-4);
-        padding: var(--ddd-spacing-4);
-        font-size: var(--ddd-font-size-m);
+        border-radius: var(--ddd-spacing-3);
+        padding: var(--ddd-spacing-2);
+        font-size: var(--ddd-font-size-s);
         cursor: pointer;
         transition: background-color 0.3s ease;
       }
@@ -67,16 +67,14 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
       .controls button.active {
         background-color: var(--ddd-theme-default-shrineTan);
       }
-      h3 span {
-        font-size: var(--social-media-label-font-size, var(--ddd-font-size-s));
-      }
       .post-container {
         display: flex;
         flex-direction: row;
         gap: var(--ddd-spacing-8);
         overflow-x: auto;
         scroll-behavior: smooth;
-        padding: var(--ddd-spacing-10);
+        margin-top: var(--ddd-spacing-4);
+        padding: var(--ddd-spacing-8);
       }
       .post-container::-webkit-scrollbar {
         display: none;
@@ -193,7 +191,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
   }
 
   async getPosts() {
-    const response = await fetch ('/api/images');
+    const response = await fetch (`./images.json`) //('/api/images');
     if (response.ok) {
       const data = await response.json();
       if (data.length > 0 && this.posts.length < data.length) {
@@ -312,7 +310,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
 
     setTimeout(() => {
       this.scrollToIndex(this.currentIndex);
-    }, 500);
+    }, 700);
   }
 
     static get haxProperties() {
