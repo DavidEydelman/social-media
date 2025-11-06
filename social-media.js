@@ -191,7 +191,7 @@ export class SocialMedia extends DDDSuper(I18NMixin(LitElement)) {
   }
 
   async getPosts() {
-    const response = await fetch (`./images.json`) //('/api/images');
+    const response = await fetch ('/api/images');
     if (response.ok) {
       const data = await response.json();
       if (data.length > 0 && this.posts.length < data.length) {
